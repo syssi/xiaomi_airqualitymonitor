@@ -1,4 +1,4 @@
-# Xiaomi Mi Air Quality Monitor (PM2.5) integration for Home Assistant
+# Xiaomi Mi Air Quality Monitor (PM2.5)
 
 This is a custom component for home assistant to integrate the Xiaomi Mi Air Quality Monitor (PM2.5).
 
@@ -34,6 +34,9 @@ Configuration variables:
 - **host** (*Required*): The IP of your light.
 - **token** (*Required*): The API token of your light.
 - **name** (*Optional*): The name of your light.
+
+
+## Platform services
 
 #### Service sensor/turn_on
 
