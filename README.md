@@ -14,7 +14,7 @@ Credits: Thanks to [Rytilahti](https://github.com/rytilahti/python-miio) for all
 * Air Quality Index
 * Attributes
   - power
-  - usb_power
+  - charging
   - battery
   - time_state
 
