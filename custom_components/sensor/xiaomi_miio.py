@@ -13,8 +13,7 @@ import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity import Entity
 from homeassistant.components.switch import (PLATFORM_SCHEMA, )
-from homeassistant.const import (CONF_NAME, CONF_HOST, CONF_TOKEN, STATE_ON,
-                                 STATE_OFF, )
+from homeassistant.const import (CONF_NAME, CONF_HOST, CONF_TOKEN, )
 from homeassistant.exceptions import PlatformNotReady
 
 _LOGGER = logging.getLogger(__name__)
@@ -31,7 +30,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 REQUIREMENTS = ['python-miio>=0.3.7']
 
 ATTR_POWER = 'power'
-ATTR_USB_POWER = 'usb_power'
+ATTR_CHARGING = 'charging'
 ATTR_BATTERY_LEVEL = 'battery_level'
 ATTR_TIME_STATE = 'time_state'
 ATTR_MODEL = 'model'
@@ -85,7 +84,7 @@ class XiaomiAirQualityMonitor(Entity):
         self._state_attrs = {
             ATTR_POWER: None,
             ATTR_BATTERY_LEVEL: None,
-            ATTR_USB_POWER: None,
+            ATTR_CHARGING: None,
             ATTR_TIME_STATE: None,
             ATTR_MODEL: self._model,
         }
@@ -158,8 +157,8 @@ class XiaomiAirQualityMonitor(Entity):
 
             self._state = state.aqi
             self._state_attrs.update({
-                ATTR_POWER: STATE_ON if state.is_on else STATE_OFF,
-                ATTR_USB_POWER: STATE_ON if state.usb_power else STATE_OFF,
+                ATTR_POWER: state.power,
+                ATTR_CHARGING: state.usb_power,
                 ATTR_BATTERY_LEVEL: state.battery,
                 ATTR_TIME_STATE: state.time_state,
             })
