@@ -38,7 +38,7 @@ Configuration variables:
 
 ## Platform services
 
-#### Service sensor/turn_on
+#### Service sensor.turn_on
 
 Turn the air quality monitor on.
 
@@ -46,7 +46,7 @@ Turn the air quality monitor on.
 |---------------------------|----------|---------------------------------------------------------------|
 | `entity_id`               |      yes | Only act on a specific xiaomi miio entity. Else targets all.  |
 
-#### Service sensor/turn_off
+#### Service sensor.turn_off
 
 Turn the air quality monitor off.
 
