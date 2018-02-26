@@ -23,7 +23,7 @@ Credits: Thanks to [Rytilahti](https://github.com/rytilahti/python-miio) for all
 ```yaml
 # confugration.yaml
 
-fan:
+sensor:
   - platform: xiaomi_miio
     name: Xiaomi Air Quality Monitor
     host: 192.168.130.73
