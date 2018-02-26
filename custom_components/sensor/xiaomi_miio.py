@@ -51,7 +51,7 @@ SERVICE_TO_METHOD = {
 # pylint: disable=unused-argument
 @asyncio.coroutine
 def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
-    """Set up the switch from config."""
+    """Set up the sensor from config."""
     from miio import AirQualityMonitor, DeviceException
     if PLATFORM not in hass.data:
         hass.data[PLATFORM] = {}
