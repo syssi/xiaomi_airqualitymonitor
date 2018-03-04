@@ -11,11 +11,9 @@ import logging
 import voluptuous as vol
 
 import homeassistant.helpers.config_validation as cv
-from homeassistant.helpers.entity import Entity
-from homeassistant.components.sensor import (PLATFORM_SCHEMA, DOMAIN)
-from homeassistant.const import (CONF_NAME, CONF_HOST, CONF_TOKEN,
-                                 SERVICE_TURN_ON, SERVICE_TURN_OFF,
-                                 ATTR_ENTITY_ID, )
+from homeassistant.helpers.entity import ToggleEntity
+from homeassistant.components.sensor import PLATFORM_SCHEMA
+from homeassistant.const import (CONF_NAME, CONF_HOST, CONF_TOKEN)
 from homeassistant.exceptions import PlatformNotReady
 
 _LOGGER = logging.getLogger(__name__)
@@ -38,15 +36,6 @@ ATTR_TIME_STATE = 'time_state'
 ATTR_MODEL = 'model'
 
 SUCCESS = ['ok']
-
-SERVICE_SCHEMA = vol.Schema({
-    vol.Optional(ATTR_ENTITY_ID): cv.entity_ids,
-})
-
-SERVICE_TO_METHOD = {
-    SERVICE_TURN_ON: {'method': 'async_turn_on'},
-    SERVICE_TURN_OFF: {'method': 'async_turn_off'},
-}
 
 
 # pylint: disable=unused-argument
@@ -78,34 +67,8 @@ def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
     hass.data[DATA_KEY][host] = device
     async_add_devices([device], update_before_add=True)
 
-    @asyncio.coroutine
-    def async_service_handler(service):
-        """Map services to methods on XiaomiAirQualityMonitor."""
-        method = SERVICE_TO_METHOD.get(service.service)
-        params = {key: value for key, value in service.data.items()
-                  if key != ATTR_ENTITY_ID}
-        entity_ids = service.data.get(ATTR_ENTITY_ID)
-        if entity_ids:
-            devices = [device for device in hass.data[DATA_KEY].values() if
-                       device.entity_id in entity_ids]
-        else:
-            devices = hass.data[DATA_KEY].values()
 
-        update_tasks = []
-        for device in devices:
-            yield from getattr(device, method['method'])(**params)
-            update_tasks.append(device.async_update_ha_state(True))
-
-        if update_tasks:
-            yield from asyncio.wait(update_tasks, loop=hass.loop)
-
-    for service in SERVICE_TO_METHOD:
-        schema = SERVICE_TO_METHOD[service].get('schema', SERVICE_SCHEMA)
-        hass.services.async_register(
-            DOMAIN, service, async_service_handler, schema=schema)
-
-
-class XiaomiAirQualityMonitor(Entity):
+class XiaomiAirQualityMonitor(ToggleEntity):
     """Representation of a Xiaomi Air Quality Monitor."""
 
     def __init__(self, name, device, model):
@@ -116,6 +79,7 @@ class XiaomiAirQualityMonitor(Entity):
         self._unit_of_measurement = 'AQI'
 
         self._device = device
+        self._is_on = None
         self._state = None
         self._state_attrs = {
             ATTR_POWER: None,
@@ -160,6 +124,11 @@ class XiaomiAirQualityMonitor(Entity):
         """Return the state attributes of the device."""
         return self._state_attrs
 
+    @property
+    def is_on(self):
+        """Return true if sensor is on."""
+        return self._is_on
+
     @asyncio.coroutine
     def _try_command(self, mask_error, func, *args, **kwargs):
         """Call a device command handling error messages."""
@@ -197,6 +166,7 @@ class XiaomiAirQualityMonitor(Entity):
             _LOGGER.debug("Got new state: %s", state)
 
             self._state = state.aqi
+            self._is_on = state.is_on
             self._state_attrs.update({
                 ATTR_POWER: state.power,
                 ATTR_CHARGING: state.usb_power,
