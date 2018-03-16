@@ -10,7 +10,6 @@ Credits: Thanks to [Rytilahti](https://github.com/rytilahti/python-miio) for all
 
 ### Air Quality Monitor
 
-* Power (on, off)
 * Air Quality Index (AQI)
 * Attributes
   - power
@@ -34,22 +33,3 @@ Configuration variables:
 - **host** (*Required*): The IP of your light.
 - **token** (*Required*): The API token of your light.
 - **name** (*Optional*): The name of your light.
-
-
-## Platform services
-
-#### Service `sensor.turn_on`
-
-Turn the air quality monitor on.
-
-| Service data attribute    | Optional | Description                                                   |
-|---------------------------|----------|---------------------------------------------------------------|
-| `entity_id`               |      yes | Only act on a specific xiaomi miio entity. Else targets all.  |
-
-#### Service `sensor.turn_off`
-
-Turn the air quality monitor off.
-
-| Service data attribute    | Optional | Description                                                   |
-|---------------------------|----------|---------------------------------------------------------------|
-| `entity_id`               |      yes | Only act on a specific xiaomi miio entity. Else targets all.  |

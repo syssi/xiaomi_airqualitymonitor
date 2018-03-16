@@ -4,14 +4,13 @@ Support for Xiaomi Mi Air Quality Monitor (PM2.5).
 For more details about this platform, please refer to the documentation
 https://home-assistant.io/components/sensor.xiaomi_miio/
 """
-import asyncio
 from functools import partial
 import logging
 
 import voluptuous as vol
 
 import homeassistant.helpers.config_validation as cv
-from homeassistant.helpers.entity import ToggleEntity
+from homeassistant.helpers.entity import Entity
 from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import (CONF_NAME, CONF_HOST, CONF_TOKEN)
 from homeassistant.exceptions import PlatformNotReady
@@ -27,7 +26,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
 })
 
-REQUIREMENTS = ['python-miio>=0.3.7']
+REQUIREMENTS = ['python-miio>=0.3.8']
 
 ATTR_POWER = 'power'
 ATTR_CHARGING = 'charging'
@@ -39,8 +38,8 @@ SUCCESS = ['ok']
 
 
 # pylint: disable=unused-argument
-@asyncio.coroutine
-def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
+async def async_setup_platform(hass, config, async_add_devices,
+                               discovery_info=None):
     """Set up the sensor from config."""
     from miio import AirQualityMonitor, DeviceException
     if DATA_KEY not in hass.data:
@@ -56,11 +55,13 @@ def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
         air_quality_monitor = AirQualityMonitor(host, token)
         device_info = air_quality_monitor.info()
         model = device_info.model
+        unique_id = "{}-{}".format(model, device_info.mac_address)
         _LOGGER.info("%s %s %s detected",
                      model,
                      device_info.firmware_version,
                      device_info.hardware_version)
-        device = XiaomiAirQualityMonitor(name, air_quality_monitor, model)
+        device = XiaomiAirQualityMonitor(
+            name, air_quality_monitor, model, unique_id)
     except DeviceException:
         raise PlatformNotReady
 
@@ -68,18 +69,19 @@ def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
     async_add_devices([device], update_before_add=True)
 
 
-class XiaomiAirQualityMonitor(ToggleEntity):
+class XiaomiAirQualityMonitor(Entity):
     """Representation of a Xiaomi Air Quality Monitor."""
 
-    def __init__(self, name, device, model):
+    def __init__(self, name, device, model, unique_id):
         """Initialize the entity."""
         self._name = name
+        self._device = device
         self._model = model
+        self._unique_id = unique_id
+
         self._icon = 'mdi:cloud'
         self._unit_of_measurement = 'AQI'
-
-        self._device = device
-        self._is_on = None
+        self._available = None
         self._state = None
         self._state_attrs = {
             ATTR_POWER: None,
@@ -93,6 +95,11 @@ class XiaomiAirQualityMonitor(ToggleEntity):
     def should_poll(self):
         """Poll the miio device."""
         return True
+
+    @property
+    def unique_id(self):
+        """Return an unique ID."""
+        return self._unique_id
 
     @property
     def name(self):
@@ -112,7 +119,7 @@ class XiaomiAirQualityMonitor(ToggleEntity):
     @property
     def available(self):
         """Return true when state is known."""
-        return self._state is not None
+        return self._available
 
     @property
     def state(self):
@@ -124,17 +131,11 @@ class XiaomiAirQualityMonitor(ToggleEntity):
         """Return the state attributes of the device."""
         return self._state_attrs
 
-    @property
-    def is_on(self):
-        """Return true if sensor is on."""
-        return self._is_on
-
-    @asyncio.coroutine
-    def _try_command(self, mask_error, func, *args, **kwargs):
+    async def _try_command(self, mask_error, func, *args, **kwargs):
         """Call a device command handling error messages."""
         from miio import DeviceException
         try:
-            result = yield from self.hass.async_add_job(
+            result = await self.hass.async_add_job(
                 partial(func, *args, **kwargs))
 
             _LOGGER.debug("Response received from miio device: %s", result)
@@ -142,31 +143,19 @@ class XiaomiAirQualityMonitor(ToggleEntity):
             return result == SUCCESS
         except DeviceException as exc:
             _LOGGER.error(mask_error, exc)
+            self._available = False
             return False
 
-    @asyncio.coroutine
-    def async_turn_on(self, **kwargs):
-        """Turn the miio device on."""
-        yield from self._try_command(
-            "Turning the miio device on failed.", self._device.on)
-
-    @asyncio.coroutine
-    def async_turn_off(self, **kwargs):
-        """Turn the miio device off."""
-        yield from self._try_command(
-            "Turning the miio device off failed.", self._device.off)
-
-    @asyncio.coroutine
-    def async_update(self):
+    async def async_update(self):
         """Fetch state from the miio device."""
         from miio import DeviceException
 
         try:
-            state = yield from self.hass.async_add_job(self._device.status)
+            state = await self.hass.async_add_job(self._device.status)
             _LOGGER.debug("Got new state: %s", state)
 
+            self._available = True
             self._state = state.aqi
-            self._is_on = state.is_on
             self._state_attrs.update({
                 ATTR_POWER: state.power,
                 ATTR_CHARGING: state.usb_power,
@@ -175,5 +164,5 @@ class XiaomiAirQualityMonitor(ToggleEntity):
             })
 
         except DeviceException as ex:
-            self._state = None
+            self._available = False
             _LOGGER.error("Got exception while fetching the state: %s", ex)
