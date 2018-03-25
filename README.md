@@ -20,7 +20,7 @@ Credits: Thanks to [Rytilahti](https://github.com/rytilahti/python-miio) for all
 ## Setup
 
 ```yaml
-# confugration.yaml
+# configuration.yaml
 
 sensor:
   - platform: xiaomi_miio
