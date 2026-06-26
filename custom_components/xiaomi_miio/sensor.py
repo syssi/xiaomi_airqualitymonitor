@@ -4,6 +4,7 @@ Support for Xiaomi Mi Air Quality Monitor (PM2.5).
 For more details about this platform, please refer to the documentation
 https://home-assistant.io/components/sensor.xiaomi_miio/
 """
+
 from functools import partial
 import logging
 
@@ -12,36 +13,38 @@ import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity import Entity
 from homeassistant.components.sensor import PLATFORM_SCHEMA
-from homeassistant.const import (CONF_NAME, CONF_HOST, CONF_TOKEN)
+from homeassistant.const import CONF_NAME, CONF_HOST, CONF_TOKEN
 from homeassistant.exceptions import PlatformNotReady
 
 _LOGGER = logging.getLogger(__name__)
 
-DEFAULT_NAME = 'Xiaomi Miio Sensor'
-DATA_KEY = 'sensor.xiaomi_miio'
+DEFAULT_NAME = "Xiaomi Miio Sensor"
+DATA_KEY = "sensor.xiaomi_miio"
 
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
-    vol.Required(CONF_HOST): cv.string,
-    vol.Required(CONF_TOKEN): vol.All(cv.string, vol.Length(min=32, max=32)),
-    vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
-})
+PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
+    {
+        vol.Required(CONF_HOST): cv.string,
+        vol.Required(CONF_TOKEN): vol.All(cv.string, vol.Length(min=32, max=32)),
+        vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
+    }
+)
 
-REQUIREMENTS = ['python-miio>=0.3.8']
+REQUIREMENTS = ["python-miio>=0.3.8"]
 
-ATTR_POWER = 'power'
-ATTR_CHARGING = 'charging'
-ATTR_BATTERY_LEVEL = 'battery_level'
-ATTR_TIME_STATE = 'time_state'
-ATTR_MODEL = 'model'
+ATTR_POWER = "power"
+ATTR_CHARGING = "charging"
+ATTR_BATTERY_LEVEL = "battery_level"
+ATTR_TIME_STATE = "time_state"
+ATTR_MODEL = "model"
 
-SUCCESS = ['ok']
+SUCCESS = ["ok"]
 
 
 # pylint: disable=unused-argument
-async def async_setup_platform(hass, config, async_add_devices,
-                               discovery_info=None):
+async def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
     """Set up the sensor from config."""
     from miio import AirQualityMonitor, DeviceException
+
     if DATA_KEY not in hass.data:
         hass.data[DATA_KEY] = {}
 
@@ -56,12 +59,13 @@ async def async_setup_platform(hass, config, async_add_devices,
         device_info = air_quality_monitor.info()
         model = device_info.model
         unique_id = "{}-{}".format(model, device_info.mac_address)
-        _LOGGER.info("%s %s %s detected",
-                     model,
-                     device_info.firmware_version,
-                     device_info.hardware_version)
-        device = XiaomiAirQualityMonitor(
-            name, air_quality_monitor, model, unique_id)
+        _LOGGER.info(
+            "%s %s %s detected",
+            model,
+            device_info.firmware_version,
+            device_info.hardware_version,
+        )
+        device = XiaomiAirQualityMonitor(name, air_quality_monitor, model, unique_id)
     except DeviceException:
         raise PlatformNotReady
 
@@ -79,8 +83,8 @@ class XiaomiAirQualityMonitor(Entity):
         self._model = model
         self._unique_id = unique_id
 
-        self._icon = 'mdi:cloud'
-        self._unit_of_measurement = 'AQI'
+        self._icon = "mdi:cloud"
+        self._unit_of_measurement = "AQI"
         self._available = None
         self._state = None
         self._state_attrs = {
@@ -134,9 +138,9 @@ class XiaomiAirQualityMonitor(Entity):
     async def _try_command(self, mask_error, func, *args, **kwargs):
         """Call a device command handling error messages."""
         from miio import DeviceException
+
         try:
-            result = await self.hass.async_add_job(
-                partial(func, *args, **kwargs))
+            result = await self.hass.async_add_job(partial(func, *args, **kwargs))
 
             _LOGGER.debug("Response received from miio device: %s", result)
 
@@ -156,12 +160,14 @@ class XiaomiAirQualityMonitor(Entity):
 
             self._available = True
             self._state = state.aqi
-            self._state_attrs.update({
-                ATTR_POWER: state.power,
-                ATTR_CHARGING: state.usb_power,
-                ATTR_BATTERY_LEVEL: state.battery,
-                ATTR_TIME_STATE: state.time_state,
-            })
+            self._state_attrs.update(
+                {
+                    ATTR_POWER: state.power,
+                    ATTR_CHARGING: state.usb_power,
+                    ATTR_BATTERY_LEVEL: state.battery,
+                    ATTR_TIME_STATE: state.time_state,
+                }
+            )
 
         except DeviceException as ex:
             self._available = False
