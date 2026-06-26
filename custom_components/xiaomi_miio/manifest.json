@@ -1,8 +1,10 @@
 {
+  "domain": "xiaomi_miio",
+  "name": "Xiaomi Mi Air Quality Monitor (PM2.5)",
   "codeowners": ["@syssi"],
   "dependencies": [],
   "documentation": "https://github.com/syssi/xiaomi_airqualitymonitor",
-  "domain": "xiaomi_miio",
-  "name": "Xiaomi Mi Air Quality Monitor (PM2.5)",
-  "requirements": ["construct==2.9.45", "python-miio==0.4.7"]
+  "iot_class": "local_polling",
+  "requirements": ["construct==2.10.68", "python-miio>=0.5.12"],
+  "version": "1.0.0"
 }

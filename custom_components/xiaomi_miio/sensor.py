@@ -1,5 +1,4 @@
-"""
-Support for Xiaomi Mi Air Quality Monitor (PM2.5).
+"""Support for Xiaomi Mi Air Quality Monitor (PM2.5).
 
 For more details about this platform, please refer to the documentation
 https://home-assistant.io/components/sensor.xiaomi_miio/
@@ -8,13 +7,13 @@ https://home-assistant.io/components/sensor.xiaomi_miio/
 from functools import partial
 import logging
 
-import voluptuous as vol
-
+from homeassistant.components.sensor import PLATFORM_SCHEMA
+from homeassistant.const import CONF_HOST, CONF_NAME, CONF_TOKEN
+from homeassistant.exceptions import PlatformNotReady
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity import Entity
-from homeassistant.components.sensor import PLATFORM_SCHEMA
-from homeassistant.const import CONF_NAME, CONF_HOST, CONF_TOKEN
-from homeassistant.exceptions import PlatformNotReady
+from miio import AirQualityMonitor, DeviceException
+import voluptuous as vol
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -43,8 +42,6 @@ SUCCESS = ["ok"]
 # pylint: disable=unused-argument
 async def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
     """Set up the sensor from config."""
-    from miio import AirQualityMonitor, DeviceException
-
     if DATA_KEY not in hass.data:
         hass.data[DATA_KEY] = {}
 
@@ -58,7 +55,7 @@ async def async_setup_platform(hass, config, async_add_devices, discovery_info=N
         air_quality_monitor = AirQualityMonitor(host, token)
         device_info = air_quality_monitor.info()
         model = device_info.model
-        unique_id = "{}-{}".format(model, device_info.mac_address)
+        unique_id = f"{model}-{device_info.mac_address}"
         _LOGGER.info(
             "%s %s %s detected",
             model,
@@ -67,7 +64,7 @@ async def async_setup_platform(hass, config, async_add_devices, discovery_info=N
         )
         device = XiaomiAirQualityMonitor(name, air_quality_monitor, model, unique_id)
     except DeviceException:
-        raise PlatformNotReady
+        raise PlatformNotReady from None
 
     hass.data[DATA_KEY][host] = device
     async_add_devices([device], update_before_add=True)
@@ -137,8 +134,6 @@ class XiaomiAirQualityMonitor(Entity):
 
     async def _try_command(self, mask_error, func, *args, **kwargs):
         """Call a device command handling error messages."""
-        from miio import DeviceException
-
         try:
             result = await self.hass.async_add_job(partial(func, *args, **kwargs))
 
@@ -152,8 +147,6 @@ class XiaomiAirQualityMonitor(Entity):
 
     async def async_update(self):
         """Fetch state from the miio device."""
-        from miio import DeviceException
-
         try:
             state = await self.hass.async_add_job(self._device.status)
             _LOGGER.debug("Got new state: %s", state)
